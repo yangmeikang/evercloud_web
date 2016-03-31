@@ -1,0 +1,5 @@
+vim /etc/httpd/conf/ports.conf
+
+#added below
+
+Listen 8081

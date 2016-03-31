@@ -1,0 +1,109 @@
+-# evercloud deploy step by step
+ -
+ -## 1. os
+ -
+ -Centos 7.2----1511
+ -Linux libertyall 3.10.0-327.10.1.el7.x86_64 #1 SMP Tue Feb 16 17:03:50 UTC 2016 x86_64 x86_64 x86_64 GNU/Linux
+ -
+ -## 2. group and user
+ -
+ -    >groupadd evercloud
+ -    >useradd evercloud -g evercloud -m -d /home/evercloud
+ -
+ -    >mkdir /etc/sudoers.d/evercloud
+ -    >vim /etc/sudoers.d/evercloud
+ -    evercloud ALL=(ALL) NOPASSWD:ALL
+ -
+ -    >mkdir -p /var/log/evercloud
+ -    >chown -R evercloud:evercloud /var/log/evercloud
+ -
+ -
+ -## 3. install system dependences
+ -
+ -    >yum groupinstall "Development tools"
+ -
+ -    >yum install openldap-devel
+ -    >yum install libffi-devel
+ -    >yum install python-pip  mariadb-devel python-dev  ldap
+ -
+ -
+ -
+ -## 4. pip virtualenv
+ -
+ -    >pip install virtualenv
+ -
+ -
+ -## 5. config evercloud_web
+ -    
+ -    >cd /var/www/evercloud_web
+ -    >virtualenv .venv
+ -    >.venv/bin/pip install -r requirements.txt
+ -
+ -### 6. create db and user
+ -
+ -    # mysql -uroot
+ -    >create database cloud_web CHARACTER SET utf8;
+ -    >create user cloud_web;
+ -    >grant all privileges on cloud_web.* to 'cloud_web'@'%' identified by 'password' with grant option;
+ -    >flush privileges;
+ -
+ -### 7. generate local_settings.py
+ -
+ -    > cd /var/www/evercloud_web
+ -    > .venv/bin/python evercloud_web/manage.py migrate_settings
+ -
+ -### 8. migrate db
+ -    >cd /var/www/evercloud_web
+ -    >.venv/bin/python evercloud_web/manage.py migrate
+ -
+ -
+ -### 9. create super user
+ -
+ -    >cd /var/www/evercloud_web
+ -    >.venv/bin/python evercloud_web/manage.py createsuperuser
+ -
+ -
+ -### 10. init flavor
+ -
+ -
+ -    >cd /var/www/evercloud_web
+ -    >.venv/bin/python evercloud_web/manage.py init_flavor
+ -
+ -### 11. init price
+ -    >cd /var/www/evercloud_web
+ -    >.venv/bin/python evercloud_web/manage.py init_price_rules
+ -
+ -### 12. test web is ok
+ -
+ -    >cd /var/www/evercloud_web
+ -    >.venv/bin/python evercloud_web/manage.py runserver 0.0.0.0:8081
+ -
+ -
+ -### 13. Celery worker
+ -
+ -    # 创建MQ的用户
+ -    >rabbitmqctl add_user evercloud_web password
+ -    >rabbitmqctl add_vhost evercloud
+ -    >rabbitmqctl set_permissions -p evercloud evercloud_web ".*" ".*" ".*"
+ -
+ -    > cp docs/celery/celeryd.conf /etc/default/celeryd
+ -    > cp docs/celery/celeryd /etc/init.d/celeryd
+ -    > cp docs/celery/celerybeat /etc/init.d/celerybeat
+ -
+ -
+ -    >chown -R evercloud:evercloud /var/log/evercloud/celery_task.log
+ -    >chgrp -R evercloud /var/log/evercloud/celery_task.log
+ -    >chown -R evercloud:evercloud /var/log/evercloud/evercloud.log
+ -    >chgrp -R evercloud /var/log/evercloud/evercloud.log
+ -    
+ -    >chmod +x /etc/init.d/celeryd
+ -    > /etc/init.d/celeryd restart
+ -    > /etc/init.d/celeryd status
+ -    >chmod +x /etc/init.d/celerybeat 
+ -    > /etc/init.d/celerybeat restart
+ -    > /etc/init.d/celerybeat status
+ -### 14 run_celery
+ -
+ -    > cd /var/www/evercloud_web/docs
+ -    >su evercloud
+ -    >sh run_celery.sh
