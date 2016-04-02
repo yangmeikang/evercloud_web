@@ -27,6 +27,7 @@ jsonpointer==1.9
 jsonschema==2.4.0
 kombu==3.0.26
 msgpack-python==0.4.6
+MySQL-python==1.2.5
 netaddr==0.7.14
 netifaces==0.10.4
 oslo.config==1.11.0
